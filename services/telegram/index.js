@@ -2,8 +2,9 @@ const Tgfancy = require("tgfancy");
 const listText = require("../utils/list-text");
 const keyboard = require("../utils/keyboard");
 const { getUserInfo, createMember } = require("../database/model");
+const { buildPositionsMsg } = require("../leaderboard/leaderboard-services");
 const logger = require("../utils/logger");
-const BinanceLeaderboard = require("../leaderboard/leaderboard-api");
+
 const getDefaultOptions = () => {
   return {
     disable_web_page_preview: true,
@@ -38,11 +39,12 @@ class TeleBot {
     return this;
   };
   run = () => {
+    this.bot.onText(/\/start/, this.handleStart);
+    this.bot.on("callback_query", this.handleCallBackQuerry);
+    this.bot.on("polling_error", (error) => logger.error(error.message));
+
     this.bot.on("message", async (msg) => {
       try {
-        this.bot.onText(/\/start/, this.handleStart);
-        this.bot.on("callback_query", this.handleCallBackQuerry);
-        this.bot.on("polling_error", (error) => logger.error(error.message));
         let messageText = msg.text || msg.caption;
         if (!messageText) return;
         if (messageText.startsWith("/")) {
@@ -132,25 +134,22 @@ class TeleBot {
   handleCallBackQuerry = async (callbackQuery) => {
     try {
       const { id, message, data, from } = callbackQuery;
-      logger.debug(`[callbackQuery]: id ${id} data ${data} from ${from}`);
+      logger.debug(
+        `[callbackQuery]: id ${id} data ${data} message ${JSON.stringify(
+          message
+        )}`
+      );
       logger.debug(`[callbackQuery]: from ${JSON.stringify(from)}`);
       let queryData = data.split("_");
-
+      let callbackData = {
+        chatId: message.chat.id,
+        messageId: message.message_id,
+        id: id,
+      };
       switch (queryData[0]) {
         case "POSITION": {
           let uid = queryData[1];
-          let text = await buildPositionsMsg(uid);
-          let options = getDefaultOptions();
-          options.chat_id = message.chat.id;
-          options.message_id = message.message_id;
-          options.reply_markup = Object.assign(
-            options.reply_markup,
-            keyboard.refreshPosition(uid)
-          );
-          await this.bot.editMessageText(text, options);
-          this.bot.answerCallbackQuery(id, {
-            text: "Refresh Position Done",
-          });
+          await this.handleGetPositionsCallback(callbackData, uid);
         }
       }
     } catch (error) {
@@ -167,60 +166,19 @@ class TeleBot {
     this.sendReplyCommand(text, msg);
     // await this.isUserDone(res, msg);
   };
+  handleGetPositionsCallback = async (callbackData, uid) => {
+    let text = await buildPositionsMsg(uid);
+    let options = getDefaultOptions();
+    options.chat_id = callbackData.chatId;
+    options.message_id = callbackData.messageId;
+    options.reply_markup = Object.assign(
+      options.reply_markup,
+      keyboard.refreshPosition(uid)
+    );
+    await this.bot.editMessageText(text, options);
+    this.bot.answerCallbackQuery(callbackData.id, {
+      text: "Refresh Position Done",
+    });
+  };
 }
 module.exports = new TeleBot();
-const buildPositionsMsg = async (uid) => {
-  let pos = null;
-  let positions = await getPositionInfo(uid);
-  // build message for airdrop
-  logger.debug(`[buildPositionsMsg] ${uid} `);
-  let text = `[${uid}](${binanceProfileLeaderboardLink + uid})`;
-  text += `\n------${positions.length} positions------`;
-  if (positions.length !== 0) {
-    for (let i = 0; i < positions.length; i++) {
-      pos = positions[i];
-      text += `
-✅*${pos.side}* ${pos.amount} #${pos.symbol}
-💵${pos.cost}✖️${pos.leverage}🏦${pos.volume}${pos.currency}
-▶️${pos.entryPrice} 🔍${pos.markPrice}
-🟢${pos.roe}% 💰${pos.pnl}$
-----------------------`;
-    }
-  }
-  return text;
-};
-const LONG = "LONG";
-const SHORT = "SHORT";
-const getPositionInfo = async (uid) => {
-  let res = await BinanceLeaderboard.getOtherPosition(uid);
-  let data = [];
-  let positions = res.otherPositionRetList;
-  // build message for airdrop
-  logger.debug(`[getPositionInfo] ${JSON.stringify(positions)}`);
-  if (positions !== 0) {
-    data = positions.map((pos) => {
-      let side = pos.amount > 0 ? LONG : SHORT;
-      let leverage = 0;
-      if (pos.roe !== 0)
-        leverage = Math.round(
-          pos.roe / ((pos.markPrice - pos.entryPrice) / pos.entryPrice)
-        );
-      pos.pnl = pos.pnl.toFixed(2);
-      pos.roe = (pos.roe * 100).toFixed(2);
-      let volume = (pos.amount * pos.entryPrice).toFixed(2);
-      let cost = (volume / leverage).toFixed(2);
-      let currency = pos.symbol.substring(pos.symbol.length - 4);
-      return {
-        ...pos,
-        side,
-        cost,
-        leverage,
-        volume,
-        currency,
-      };
-    });
-  }
-  return data;
-};
-let binanceProfileLeaderboardLink =
-  "https://www.binance.com/en/futures-activity/leaderboard?type=myProfile&encryptedUid=";

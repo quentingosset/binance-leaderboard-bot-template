@@ -2,6 +2,7 @@ const listText = require("./list-text");
 const refreshPosition = (uid) => {
   return {
     resize_keyboard: true,
+    one_time_keyboard: true,
     inline_keyboard: [
       [
         {
