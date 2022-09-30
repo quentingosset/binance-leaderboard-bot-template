@@ -168,8 +168,8 @@ const getStaticOfRecentPosition = async (uid) => {
     static.success = true;
     static.pnlOfWin = static.pnlOfWin.toFixed(2);
     static.pnlOfLoss = static.pnlOfLoss.toFixed(2);
-    static.maxTpWin = (static.maxTpWin * 100).toFixed(2);
-    static.maxStoploss = (static.maxStoploss * 100).toFixed(2);
+    static.maxTpWin = (static.maxTpWin * 10 * 100).toFixed(2);
+    static.maxStoploss = (static.maxStoploss * 10 * 100).toFixed(2);
     static.roeOfWin = (static.roeOfWin * 100).toFixed(2);
     static.roeOfLoss = (static.roeOfLoss * 100).toFixed(2);
     static.avgTpWin = ((static.tpWin * 10 * 100) / static.total).toFixed(2);
