@@ -91,6 +91,7 @@ const getStaticOfRecentPosition = async (uid) => {
     from: null,
     to: null,
     success: false,
+    symbols: {},
   };
   let tp = 0,
     stoploss = 0;
@@ -100,14 +101,19 @@ const getStaticOfRecentPosition = async (uid) => {
   if (positions.length !== 0) {
     static.from = positions[0].createTimeStamp;
     static.to = positions[0].createTimeStamp;
-    maxTpWin = maxStoploss = positions[0].roe;
+    static.maxTpWin = static.maxStoploss = positions[0].roe;
+
     data = positions.map((pos) => {
+      if (!!static.symbols[pos.symbol]) {
+        static.symbols[pos.symbol]++;
+      } else static.symbols[pos.symbol] = 1;
       // calculate
       let range = pos.updateTimeStamp - pos.createTimeStamp;
       if (range < 60 * 60 * 1000) static.h1++;
       else if (range < 4 * 60 * 60 * 1000) static.h4++;
       else if (range < 24 * 60 * 60 * 1000) static.day++;
       else static.days++;
+
       // get static of closed position
       if (pos.closed == true) {
         if (static.from > pos.createTimeStamp)
@@ -158,12 +164,11 @@ const getStaticOfRecentPosition = async (uid) => {
         currency,
       };
     });
-    logger.debug(static);
     static.total = static.totalWin + static.totalLoss;
     static.avgPnl = (static.totalPnl / static.total).toFixed(2);
     static.avgRoe = ((static.totalRoe * 100) / static.total).toFixed(2);
     static.totalRoe = (static.totalRoe * 100).toFixed(2);
-    static.totalPnl = (static.totalPnl * 100).toFixed(2);
+    static.totalPnl = static.totalPnl.toFixed(2);
     static.winRate = ((static.totalWin * 100) / static.total).toFixed(2);
     static.range = Math.round((static.to - static.from) / 86400000);
     static.from = new Date(static.from).toLocaleDateString();
@@ -177,7 +182,6 @@ const getStaticOfRecentPosition = async (uid) => {
     static.roeOfWin = (static.roeOfWin * 100).toFixed(2);
     static.roeOfLoss = (static.roeOfLoss * 100).toFixed(2);
     static.avgTpWin = ((static.tpWin * 10 * 100) / static.total).toFixed(2);
-
     static.avgStopLoss = ((static.stopLoss * 10 * 100) / static.total).toFixed(
       2
     );
@@ -196,27 +200,32 @@ const buildStaticPositionMsg = async (uid, detail = false) => {
   // build message for getposition
   logger.debug(`[buildPositionsMsg] ${uid} `);
   if (static.success == false) return `🔴 Not found history position of ${uid}`;
-  let text = `#STATIC OF #${static.nickName}\n${uid}`;
+  let text = `#STATIC OF *#${static.nickName}*\n${uid}`;
   text += `
 ⏳${static.from}➡️${static.to} (${static.range} days)`;
   text += `\n---------${static.total} [positions](${
     binanceProfileLeaderboardLink + uid
   })--------
 💰 ${static.totalPnl}$ ${static.totalRoe}% 
-💵 AVG:${static.avgPnl} ${static.avgRoe}%
+💵 A: ${static.avgPnl}$ ${static.avgRoe}%
 ✅ ${static.totalWin} (${static.winRate}%) ❌ ${static.totalLoss}
 -------------------
 🏦 ${static.pnlOfWin}$ ❤️ ${static.roeOfWin}% 
-🎯 AVG:${static.avgTpWin}% M:${static.maxTpWin}%-10x
+🎯 A: ${static.avgTpWin}% M: ${static.maxTpWin}%(10x)
 -------------------
 💦${static.pnlOfLoss}$  💸${static.roeOfLoss}% 
-❗️ AVG:${static.avgStopLoss}% M:${static.maxStoploss}%-10x
-🕰<1h: ${static.h1} <4h: ${static.h4} <day: ${static.day} >day: ${static.days}
+❗️ A: ${static.avgStopLoss}% M:${static.maxStoploss}%(10x)
+🕰 <1h: ${static.h1} <4h: ${static.h4} <day: ${static.day} >day: ${static.days}
 `;
+  Object.keys(static.symbols).map((symbol) => {
+    text += `| ${symbol}: ${static.symbols[symbol]}`;
+  });
   if (detail) text += buildPositionText(positions);
   logger.debug(text);
   return text;
 };
+
+const getPerformanceInfo = async (uid) => {};
 module.exports = {
   buildPositionsMsg,
   buildStaticPositionMsg,

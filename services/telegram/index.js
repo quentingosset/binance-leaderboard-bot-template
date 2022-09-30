@@ -7,7 +7,7 @@ const {
   buildStaticPositionMsg,
 } = require("../leaderboard/leaderboard-services");
 const logger = require("../utils/logger");
-
+const delay = require("../utils/time");
 const getDefaultOptions = () => {
   return {
     disable_web_page_preview: true,
@@ -45,25 +45,28 @@ class TeleBot {
     this.bot.onText(/\/start/, this.handleStart);
     this.bot.on("callback_query", this.handleCallBackQuerry);
     this.bot.on("polling_error", (error) => logger.error(error.message));
-
     this.bot.on("message", async (msg) => {
       try {
         let messageText = msg.text || msg.caption;
         if (!messageText) return;
         if (messageText.startsWith("/")) {
           let args = messageText.replace("/", "").split(" ");
-          switch (args[0]) {
+          let commandParameter = args[0].split("?").join(" ").split(" ");
+          const params = Object.fromEntries(
+            new URLSearchParams(commandParameter[1])
+          );
+          params.data = args[1];
+          switch (commandParameter[0]) {
             case "p":
             case "pos":
             case "position":
-              this.handleGetPositions(msg, args);
+              this.handleGetPositions(msg, params);
               break;
             case "s":
             case "static":
-              this.handleGetStaticPosition(msg, args);
+              this.handleGetStaticPosition(msg, params);
               break;
           }
-          logger.debug(msg);
           return;
         }
         // send a message to the chat acknowledging receipt of their message
@@ -168,15 +171,22 @@ class TeleBot {
       logger.error(`[handleCallBackQuerry] ${error.message}`);
     }
   };
-  handleGetPositions = async (msg, args) => {
-    if (!args[1] || args[1].length !== 32) {
+  handleGetPositions = async (msg, params) => {
+    if (!params.data) {
       this.bot.sendMessage(msg.chat.id, listText.helpPosition);
     }
-    let text = await buildPositionsMsg(args[1]);
-    msg.reply_markup = keyboard.refreshPosition(args[1]);
-    logger.debug(msg.reply_markup);
-    this.sendReplyCommand(text, msg);
-    // await this.isUserDone(res, msg);
+    let uids = params.data.split(",");
+    for (const uid of uids) {
+      if (uid.length !== 32) {
+        this.bot.sendMessage(msg.chat.id, listText.uidNotValid(uid));
+        return;
+      }
+      let text = await buildPositionsMsg(uid);
+      msg.reply_markup = keyboard.refreshPosition(uid);
+      logger.debug(msg.reply_markup);
+      this.sendReplyCommand(text, msg);
+      // await this.isUserDone(res, msg);
+    }
   };
   handleGetPositionsCallback = async (callbackData, uid) => {
     let text = await buildPositionsMsg(uid);
@@ -193,13 +203,22 @@ class TeleBot {
     });
   };
 
-  handleGetStaticPosition = async (msg, args) => {
-    if (!args[1] || args[1].length !== 32) {
+  handleGetStaticPosition = async (msg, params) => {
+    if (!params.data) {
       this.bot.sendMessage(msg.chat.id, listText.helpPosition);
     }
-    let text = await buildStaticPositionMsg(args[1]);
-    msg.reply_markup = keyboard.refreshHistoryPosition(args[1]);
-    this.sendReplyCommand(text, msg);
+    let uids = params.data.split(",");
+    for (const uid of uids) {
+      if (uid.length !== 32) {
+        this.bot.sendMessage(msg.chat.id, listText.uidNotValid(uid));
+        return;
+      }
+      let text = await buildStaticPositionMsg(uid, params.detail);
+      msg.reply_markup = keyboard.refreshHistoryPosition(uid);
+      await this.sendReplyCommand(text, msg);
+      await delay(500);
+    }
+
     // await this.isUserDone(res, msg);
   };
   handleGetStaticPositionCallback = async (callbackData, uid) => {
