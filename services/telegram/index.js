@@ -2,7 +2,10 @@ const Tgfancy = require("tgfancy");
 const listText = require("../utils/list-text");
 const keyboard = require("../utils/keyboard");
 const { getUserInfo, createMember } = require("../database/model");
-const { buildPositionsMsg } = require("../leaderboard/leaderboard-services");
+const {
+  buildPositionsMsg,
+  buildStaticPositionMsg,
+} = require("../leaderboard/leaderboard-services");
 const logger = require("../utils/logger");
 
 const getDefaultOptions = () => {
@@ -50,9 +53,15 @@ class TeleBot {
         if (messageText.startsWith("/")) {
           let args = messageText.replace("/", "").split(" ");
           switch (args[0]) {
+            case "p":
             case "pos":
             case "position":
               this.handleGetPositions(msg, args);
+              break;
+            case "s":
+            case "static":
+              this.handleGetStaticPosition(msg, args);
+              break;
           }
           logger.debug(msg);
           return;
@@ -68,10 +77,7 @@ class TeleBot {
       let messageText = msg.text || msg.caption;
       if (!messageText) return;
       const chatId = msg.chat.id.toString();
-      if (
-        this.id_command.includes(chatId.toString()) &&
-        messageText.startsWith("/")
-      ) {
+      if (messageText.startsWith("/")) {
         return;
       }
     });
@@ -150,6 +156,12 @@ class TeleBot {
         case "POSITION": {
           let uid = queryData[1];
           await this.handleGetPositionsCallback(callbackData, uid);
+          break;
+        }
+        case "STATIC": {
+          let uid = queryData[1];
+          await this.handleGetStaticPositionCallback(callbackData, uid);
+          break;
         }
       }
     } catch (error) {
@@ -178,6 +190,30 @@ class TeleBot {
     await this.bot.editMessageText(text, options);
     this.bot.answerCallbackQuery(callbackData.id, {
       text: "Refresh Position Done",
+    });
+  };
+
+  handleGetStaticPosition = async (msg, args) => {
+    if (!args[1] || args[1].length !== 32) {
+      this.bot.sendMessage(msg.chat.id, listText.helpPosition);
+    }
+    let text = await buildStaticPositionMsg(args[1]);
+    msg.reply_markup = keyboard.refreshHistoryPosition(args[1]);
+    this.sendReplyCommand(text, msg);
+    // await this.isUserDone(res, msg);
+  };
+  handleGetStaticPositionCallback = async (callbackData, uid) => {
+    let text = await buildStaticPositionMsg(uid);
+    let options = getDefaultOptions();
+    options.chat_id = callbackData.chatId;
+    options.message_id = callbackData.messageId;
+    options.reply_markup = Object.assign(
+      options.reply_markup,
+      keyboard.refreshHistoryPosition(uid)
+    );
+    await this.bot.editMessageText(text, options);
+    this.bot.answerCallbackQuery(callbackData.id, {
+      text: "Refresh Static Done",
     });
   };
 }
