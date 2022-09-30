@@ -160,6 +160,10 @@ const getStaticOfRecentPosition = async (uid) => {
     });
     logger.debug(static);
     static.total = static.totalWin + static.totalLoss;
+    static.avgPnl = (static.totalPnl / static.total).toFixed(2);
+    static.avgRoe = ((static.totalRoe * 100) / static.total).toFixed(2);
+    static.totalRoe = (static.totalRoe * 100).toFixed(2);
+    static.totalPnl = (static.totalPnl * 100).toFixed(2);
     static.winRate = ((static.totalWin * 100) / static.total).toFixed(2);
     static.range = Math.round((static.to - static.from) / 86400000);
     static.from = new Date(static.from).toLocaleDateString();
@@ -173,6 +177,7 @@ const getStaticOfRecentPosition = async (uid) => {
     static.roeOfWin = (static.roeOfWin * 100).toFixed(2);
     static.roeOfLoss = (static.roeOfLoss * 100).toFixed(2);
     static.avgTpWin = ((static.tpWin * 10 * 100) / static.total).toFixed(2);
+
     static.avgStopLoss = ((static.stopLoss * 10 * 100) / static.total).toFixed(
       2
     );
@@ -191,17 +196,21 @@ const buildStaticPositionMsg = async (uid, detail = false) => {
   // build message for getposition
   logger.debug(`[buildPositionsMsg] ${uid} `);
   if (static.success == false) return `🔴 Not found history position of ${uid}`;
-  let text = `Static of ${static.nickName}\n${uid}`;
+  let text = `#STATIC OF #${static.nickName}\n${uid}`;
   text += `
 ⏳${static.from}➡️${static.to} (${static.range} days)`;
   text += `\n---------${static.total} [positions](${
     binanceProfileLeaderboardLink + uid
   })--------
+💰 ${static.totalPnl}$ ${static.totalRoe}% 
+💵 AVG:${static.avgPnl} ${static.avgRoe}%
 ✅ ${static.totalWin} (${static.winRate}%) ❌ ${static.totalLoss}
-🟢 ${static.pnlOfWin}$ ${static.roeOfWin}% 
-❇️ ${static.avgTpWin}% MAX: ${static.maxTpWin}%(10x)
-🔴 ${static.pnlOfLoss}$ ${static.roeOfLoss}% 
-❗️ ${static.avgStopLoss}% MAX: ${static.maxStoploss}%(10x)
+-------------------
+🏦 ${static.pnlOfWin}$ ❤️ ${static.roeOfWin}% 
+🎯 AVG:${static.avgTpWin}% M:${static.maxTpWin}%-10x
+-------------------
+💦${static.pnlOfLoss}$  💸${static.roeOfLoss}% 
+❗️ AVG:${static.avgStopLoss}% M:${static.maxStoploss}%-10x
 🕰<1h: ${static.h1} <4h: ${static.h4} <day: ${static.day} >day: ${static.days}
 `;
   if (detail) text += buildPositionText(positions);
