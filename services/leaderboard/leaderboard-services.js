@@ -256,7 +256,7 @@ const buildPNLandROI = (data) => {
   for (const [key, value] of Object.entries(data.PNL)) {
     //console.log(`${key}: ${value}`);
     if (value > 0) text += `\n*${key}*: ${value}$ (${data.ROI[key]}%)`;
-    else text += `\n_${key}: *${value}$ (${data.ROI[key]}%)*_`;
+    else text += `\n_${key}:_ *${value}$ (${data.ROI[key]}%)*`;
   }
   return text;
 };

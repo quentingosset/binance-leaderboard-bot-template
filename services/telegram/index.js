@@ -260,17 +260,17 @@ class TeleBot {
       let text = await buildPerformanceInfoMsg(uid, params.detail);
       if (params.S)
         text +=
-          `\n----------------------------` +
+          `\n----------------------------\n` +
           (await buildStaticPositionMsg(uid));
       if (params.P)
         text +=
-          `\n----------------------------` + (await buildPositionsMsg(uid));
+          `\n----------------------------\n` + (await buildPositionsMsg(uid));
       if (params.A) {
         text +=
-          `\n----------------------------` +
+          `\n----------------------------\n` +
           (await buildStaticPositionMsg(uid));
         text +=
-          `\n----------------------------` + (await buildPositionsMsg(uid));
+          `\n----------------------------\n` + (await buildPositionsMsg(uid));
       }
       msg.reply_markup = keyboard.refreshPerformanceInfo(uid);
       this.sendReplyCommand(text, msg);
