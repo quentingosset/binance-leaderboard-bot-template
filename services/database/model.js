@@ -1,6 +1,7 @@
 const MongoDb = require("./mongodb");
 const logger = require("../utils/logger");
 const UserModel = MongoDb.getUserModel();
+const UidInfoModel = MongoDb.UidInfoModel;
 
 module.exports = {
   getUserInfo,
@@ -8,6 +9,8 @@ module.exports = {
   findOrCreate,
   updateUserInfo,
   getAllUserInfo,
+  getUidInfo,
+  createUidInfo,
 };
 async function getAllUserInfo() {
   return UserModel.find({ role: "user" });
@@ -46,4 +49,12 @@ async function updateUserInfo(id_telegram, obj) {
   );
   logger.debug(`[updateUserInfo] Member Update} ${JSON.stringify(memmber)}`);
   return;
+}
+
+async function getUidInfo(uid) {
+  return UidInfoModel.findOne({ uid: uid });
+}
+async function createUidInfo(params) {
+  let uidInfo = new UidInfoModel(params);
+  return uidInfo.save();
 }

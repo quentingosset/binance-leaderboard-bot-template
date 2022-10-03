@@ -1,18 +1,29 @@
 const logger = require("../utils/logger");
-
+const { getUidInfo, createUidInfo } = require("../database/model");
 let binanceProfileLeaderboardLink =
   "https://www.binance.com/en/futures-activity/leaderboard?type=myProfile&encryptedUid=";
 const BinanceLeaderboardApi = require("../leaderboard/leaderboard-api");
 const LONG = "LONG";
 const SHORT = "SHORT";
+const findUidInfoOrCreate = async (uid) => {
+  let info = await getUidInfo(uid);
+  if (!info) {
+    info = await BinanceLeaderboardApi.getOtherLeaderboardBaseInfo(uid);
+    info.uid = uid;
+    await createUidInfo(info);
+  }
+  return info;
+};
+
 const buildPositionsMsg = async (uid) => {
   let positions = await getCurrentPositionInfo(uid);
+  let info = await findUidInfoOrCreate(uid);
   // build message for getposition
   logger.debug(`[buildPositionsMsg] ${uid} `);
-  let text = `${uid}`;
+  let text = `${uid}:`;
   text += `\n---------${positions.length} [positions](${
     binanceProfileLeaderboardLink + uid
-  })------`;
+  }) of *${info.nickName}*------`;
   text += buildPositionText(positions);
   return text;
 };
@@ -32,6 +43,7 @@ const buildPositionText = (positions) => {
   }
   return text;
 };
+
 const getCurrentPositionInfo = async (uid) => {
   let res = await BinanceLeaderboardApi.getOtherPosition(uid);
   let data = [];
@@ -62,10 +74,12 @@ const getCurrentPositionInfo = async (uid) => {
   }
   return data;
 };
+
 const getStaticOfRecentPosition = async (uid) => {
   let positions = await BinanceLeaderboardApi.getRecentPosition(uid);
   let data = [];
   let static = {
+    uid: uid,
     totalWin: 0,
     totalLoss: 0,
 
@@ -186,7 +200,6 @@ const getStaticOfRecentPosition = async (uid) => {
       2
     );
   }
-  logger.debug(static);
   return {
     static,
     positions: data,
@@ -195,38 +208,77 @@ const getStaticOfRecentPosition = async (uid) => {
 
 const buildStaticPositionMsg = async (uid, detail = false) => {
   let { static, positions } = await getStaticOfRecentPosition(uid);
-  let info = await BinanceLeaderboardApi.getOtherLeaderboardBaseInfo(uid);
-  if (info) static.nickName = info.nickName;
+  let info = await findUidInfoOrCreate(uid);
   // build message for getposition
   logger.debug(`[buildPositionsMsg] ${uid} `);
   if (static.success == false) return `🔴 Not found history position of ${uid}`;
-  let text = `#STATIC OF *#${static.nickName}*\n${uid}`;
-  text += `
-⏳${static.from}➡️${static.to} (${static.range} days)`;
-  text += `\n---------${static.total} [positions](${
-    binanceProfileLeaderboardLink + uid
-  })--------
-💰 ${static.totalPnl}$ ${static.totalRoe}% 
-💵 A: ${static.avgPnl}$ ${static.avgRoe}%
-✅ ${static.totalWin} (${static.winRate}%) ❌ ${static.totalLoss}
--------------------
-🏦 ${static.pnlOfWin}$ ❤️ ${static.roeOfWin}% 
-🎯 A: ${static.avgTpWin}% M: ${static.maxTpWin}%(10x)
--------------------
-💦${static.pnlOfLoss}$  💸${static.roeOfLoss}% 
-❗️ A: ${static.avgStopLoss}% M:${static.maxStoploss}%(10x)
-🕰 <1h: ${static.h1} <4h: ${static.h4} <day: ${static.day} >day: ${static.days}
-`;
-  Object.keys(static.symbols).map((symbol) => {
-    text += `| ${symbol}: ${static.symbols[symbol]}`;
-  });
+  let text = `#STATIC OF *#${info.nickName}*\n${uid}`;
+  text += buildAnalysisOfUidMsg(static);
   if (detail) text += buildPositionText(positions);
   logger.debug(text);
   return text;
 };
+const buildAnalysisOfUidMsg = (static) => {
+  let text = ``;
+  text += `
+  ⏳${static.from}➡️${static.to} (${static.range} days)`;
+  text += `\n---------${static.total} [positions](${
+    binanceProfileLeaderboardLink + static.uid
+  })--------
+  💰 ${static.totalPnl}$ ${static.totalRoe}% 
+  💵 A: ${static.avgPnl}$ ${static.avgRoe}%
+  ✅ ${static.totalWin} (${static.winRate}%) ❌ ${static.totalLoss}
+  -------------------
+  🏦 ${static.pnlOfWin}$ ❤️ ${static.roeOfWin}% 
+  🎯 A: ${static.avgTpWin}% M: ${static.maxTpWin}%(10x)
+  -------------------
+  💦${static.pnlOfLoss}$  💸${static.roeOfLoss}% 
+  ❗️ A: ${static.avgStopLoss}% M:${static.maxStoploss}%(10x)
+  🕰 <1h: ${static.h1} <4h: ${static.h4} <day: ${static.day} >day: ${static.days}
+  ❤️ `;
+  Object.keys(static.symbols).map((symbol) => {
+    text += `${symbol}: ${static.symbols[symbol]}|`;
+  });
+  return text;
+};
+const buildPerformanceInfoMsg = async (uid) => {
+  let data = await getPerformanceInfo(uid);
+  let info = await findUidInfoOrCreate(uid);
+  let text = `#INFO of *#${info.nickName}: ${info.followerCount} *[follower](${
+    binanceProfileLeaderboardLink + uid
+  }) \n${uid}`;
 
-const getPerformanceInfo = async (uid) => {};
+  text += buildPNLandROI(data);
+  return text;
+};
+const buildPNLandROI = (data) => {
+  let text = ``;
+  for (const [key, value] of Object.entries(data.PNL)) {
+    //console.log(`${key}: ${value}`);
+    if (value > 0) text += `\n*${key}*: ${value}$ (${data.ROI[key]}%)`;
+    else text += `\n_${key}: *${value}$ (${data.ROI[key]}%)*_`;
+  }
+  return text;
+};
+const getPerformanceInfo = async (uid) => {
+  let data = await BinanceLeaderboardApi.getOtherPerformance(uid);
+  let res = {
+    ROI: {},
+    PNL: {},
+  };
+  data.map((d) => {
+    if (d.statisticsType == "ROI") {
+      res.ROI[d.periodType] = (d.value * 100).toFixed(2);
+    }
+    if (d.statisticsType == "PNL") {
+      //      if (res.PNL[d.periodType] > 0)
+      res.PNL[d.periodType] = d.value.toFixed(2);
+    }
+  });
+  return res;
+};
 module.exports = {
   buildPositionsMsg,
   buildStaticPositionMsg,
+  buildPerformanceInfoMsg,
 };

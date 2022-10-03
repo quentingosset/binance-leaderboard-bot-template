@@ -27,7 +27,22 @@ const refreshHistoryPosition = (uid) => {
     ],
   };
 };
+const refreshPerformanceInfo = (uid) => {
+  return {
+    resize_keyboard: true,
+    one_time_keyboard: true,
+    inline_keyboard: [
+      [
+        {
+          text: "Refresh",
+          callback_data: `INFO_${uid}`,
+        },
+      ],
+    ],
+  };
+};
 module.exports = {
   refreshPosition,
   refreshHistoryPosition,
+  refreshPerformanceInfo,
 };

@@ -5,6 +5,7 @@ const { getUserInfo, createMember } = require("../database/model");
 const {
   buildPositionsMsg,
   buildStaticPositionMsg,
+  buildPerformanceInfoMsg,
 } = require("../leaderboard/leaderboard-services");
 const logger = require("../utils/logger");
 const delay = require("../utils/time");
@@ -47,7 +48,7 @@ class TeleBot {
     this.bot.on("polling_error", (error) => logger.error(error.message));
     this.bot.on("message", async (msg) => {
       try {
-        let messageText = msg.text || msg.caption;
+        let messageText = msg.text.toUpperCase();
         if (!messageText) return;
         if (messageText.startsWith("/")) {
           let args = messageText.replace("/", "").split(" ");
@@ -57,14 +58,18 @@ class TeleBot {
           );
           params.data = args[1];
           switch (commandParameter[0]) {
-            case "p":
-            case "pos":
-            case "position":
+            case "P":
+            case "POS":
+            case "POSITION":
               this.handleGetPositions(msg, params);
               break;
-            case "s":
-            case "static":
+            case "S":
+            case "STATIC":
               this.handleGetStaticPosition(msg, params);
+              break;
+            case "I":
+            case "INFO":
+              this.handleGetInfo(msg, params);
               break;
           }
           return;
@@ -166,6 +171,11 @@ class TeleBot {
           await this.handleGetStaticPositionCallback(callbackData, uid);
           break;
         }
+        case "STATIC": {
+          let uid = queryData[1];
+          await this.handleGetInfoCallback(callbackData, uid);
+          break;
+        }
       }
     } catch (error) {
       logger.error(`[handleCallBackQuerry] ${error.message}`);
@@ -229,6 +239,54 @@ class TeleBot {
     options.reply_markup = Object.assign(
       options.reply_markup,
       keyboard.refreshHistoryPosition(uid)
+    );
+    await this.bot.editMessageText(text, options);
+    this.bot.answerCallbackQuery(callbackData.id, {
+      text: "Refresh Static Done",
+    });
+  };
+
+  handleGetInfo = async (msg, params) => {
+    if (!params.data) {
+      this.bot.sendMessage(msg.chat.id, listText.helpPosition);
+    }
+    let uids = params.data.replace(/#/, "").split(",");
+    for (const uid of uids) {
+      if (uid.length !== 32) {
+        this.bot.sendMessage(msg.chat.id, listText.uidNotValid(uid));
+        return;
+      }
+      console.log(params);
+      let text = await buildPerformanceInfoMsg(uid, params.detail);
+      if (params.S)
+        text +=
+          `\n----------------------------` +
+          (await buildStaticPositionMsg(uid));
+      if (params.P)
+        text +=
+          `\n----------------------------` + (await buildPositionsMsg(uid));
+      if (params.A) {
+        text +=
+          `\n----------------------------` +
+          (await buildStaticPositionMsg(uid));
+        text +=
+          `\n----------------------------` + (await buildPositionsMsg(uid));
+      }
+      msg.reply_markup = keyboard.refreshPerformanceInfo(uid);
+      this.sendReplyCommand(text, msg);
+      await delay(500);
+    }
+
+    // await this.isUserDone(res, msg);
+  };
+  handleGetInfoCallback = async (callbackData, uid) => {
+    let text = await buildPerformanceInfoMsg(uid);
+    let options = getDefaultOptions();
+    options.chat_id = callbackData.chatId;
+    options.message_id = callbackData.messageId;
+    options.reply_markup = Object.assign(
+      options.reply_markup,
+      keyboard.refreshPerformanceInfo(uid)
     );
     await this.bot.editMessageText(text, options);
     this.bot.answerCallbackQuery(callbackData.id, {

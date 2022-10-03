@@ -6,7 +6,7 @@
 const mongoose = require("mongoose");
 const logger = require("../utils/logger");
 const UserSchema = require("./schemas/account.schema");
-
+const UidInfoSchema = require("./schemas/uid-info.schema");
 class MongoDb {
   constructor() {}
   async init() {
@@ -31,6 +31,7 @@ class MongoDb {
         .then((data) => console.log(`Connect to ${url} success`))
         .catch((error) => console.log(error.message));
       this.UserModel = mongoose.model("User", UserSchema);
+      this.UidInfoModel = mongoose.model("uid_info", UidInfoSchema);
     } catch (error) {
       throw error;
     }
