@@ -175,7 +175,7 @@ class TeleBot {
     if (!params.data) {
       this.bot.sendMessage(msg.chat.id, listText.helpPosition);
     }
-    let uids = params.data.split(",");
+    let uids = params.data.replace(/#/, "").split(",");
     for (const uid of uids) {
       if (uid.length !== 32) {
         this.bot.sendMessage(msg.chat.id, listText.uidNotValid(uid));
@@ -207,7 +207,7 @@ class TeleBot {
     if (!params.data) {
       this.bot.sendMessage(msg.chat.id, listText.helpPosition);
     }
-    let uids = params.data.split(",");
+    let uids = params.data.replace(/#/, "").split(",");
     for (const uid of uids) {
       if (uid.length !== 32) {
         this.bot.sendMessage(msg.chat.id, listText.uidNotValid(uid));
