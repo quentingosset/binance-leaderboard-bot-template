@@ -48,6 +48,7 @@ class TeleBot {
     this.bot.on("polling_error", (error) => logger.error(error.message));
     this.bot.on("message", async (msg) => {
       try {
+        if (!msg.text) return;
         let messageText = msg.text.toUpperCase();
         if (!messageText) return;
         if (messageText.startsWith("/")) {
@@ -71,13 +72,17 @@ class TeleBot {
             case "INFO":
               this.handleGetInfo(msg, params);
               break;
+            case "T":
+            case "TOP":
+              this.handleGetTopLeader(msg, params);
+              break;
           }
           return;
         }
         // send a message to the chat acknowledging receipt of their message
         return;
       } catch (error) {
-        logger.error(`message + ${error}`);
+        logger.error(`On telegram message + ${error}`);
       }
     });
     // maybe get more speed
@@ -294,4 +299,5 @@ class TeleBot {
     });
   };
 }
+
 module.exports = new TeleBot();

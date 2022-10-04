@@ -47,9 +47,10 @@ const buildPositionText = (positions) => {
 const getCurrentPositionInfo = async (uid) => {
   let res = await BinanceLeaderboardApi.getOtherPosition(uid);
   let data = [];
+  if (!res.otherPositionRetList) return [];
   let positions = res.otherPositionRetList;
   logger.debug(`[getPositionInfo] ${JSON.stringify(positions)}`);
-  if (positions !== 0) {
+  if (positions.length !== 0) {
     data = positions.map((pos) => {
       let side = pos.amount > 0 ? LONG : SHORT;
       let leverage = 0;
@@ -109,9 +110,7 @@ const getStaticOfRecentPosition = async (uid) => {
   };
   let tp = 0,
     stoploss = 0;
-  logger.debug(
-    `[getStaticOfRecentPosition] ${JSON.stringify(positions.length)}`
-  );
+  logger.debug(`[getStaticOfRecentPosition] ${positions.length}`);
   if (positions.length !== 0) {
     static.from = positions[0].createTimeStamp;
     static.to = positions[0].createTimeStamp;
@@ -288,8 +287,12 @@ const getPerformanceInfo = async (uid) => {
 };
 
 const getTopLeaderBoard = async () => {};
+
 module.exports = {
   buildPositionsMsg,
   buildStaticPositionMsg,
   buildPerformanceInfoMsg,
+  getPerformanceInfo,
+  getStaticOfRecentPosition,
+  getCurrentPositionInfo,
 };
