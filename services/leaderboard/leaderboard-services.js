@@ -249,6 +249,7 @@ const buildPerformanceInfoMsg = async (uid) => {
   }) \n${uid}`;
 
   text += buildPNLandROI(data);
+  logger.debug(text);
   return text;
 };
 const buildPNLandROI = (data) => {
@@ -256,10 +257,18 @@ const buildPNLandROI = (data) => {
   for (const [key, value] of Object.entries(data.PNL)) {
     //console.log(`${key}: ${value}`);
     if (value > 0) text += `\n*${key}*: ${value}$ (${data.ROI[key]}%)`;
-    else text += `\n_${key}:_ *${value}$ (${data.ROI[key]}%)*`;
+    else text += `\n${key}: *${value}$ (${data.ROI[key]}%)*`;
   }
-  return text;
+  return toEscapeMSg(text);
 };
+
+const toEscapeMSg = (str) => {
+  return str.replace(/_/gi, "-");
+  // .replace(/-/gi, "\\-")
+  // .replace("~", "\\~")
+  // .replace(/`/gi, "\\`");
+};
+
 const getPerformanceInfo = async (uid) => {
   let data = await BinanceLeaderboardApi.getOtherPerformance(uid);
   let res = {
@@ -277,6 +286,8 @@ const getPerformanceInfo = async (uid) => {
   });
   return res;
 };
+
+const getTopLeaderBoard = async () => {};
 module.exports = {
   buildPositionsMsg,
   buildStaticPositionMsg,
