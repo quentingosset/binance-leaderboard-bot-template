@@ -190,7 +190,7 @@ class TeleBot {
     if (!params.data) {
       this.bot.sendMessage(msg.chat.id, listText.helpPosition);
     }
-    let uids = params.data.replace(/#/, "").split(",");
+    let uids = params.data.replace(/#/g, "").split(",");
     for (const uid of uids) {
       if (uid.length !== 32) {
         this.bot.sendMessage(msg.chat.id, listText.uidNotValid(uid));
@@ -222,7 +222,7 @@ class TeleBot {
     if (!params.data) {
       this.bot.sendMessage(msg.chat.id, listText.helpPosition);
     }
-    let uids = params.data.replace(/#/, "").split(",");
+    let uids = params.data.replace(/#/g, "").split(",");
     for (const uid of uids) {
       if (uid.length !== 32) {
         this.bot.sendMessage(msg.chat.id, listText.uidNotValid(uid));
@@ -255,13 +255,12 @@ class TeleBot {
     if (!params.data) {
       this.bot.sendMessage(msg.chat.id, listText.helpPosition);
     }
-    let uids = params.data.replace(/#/, "").split(",");
+    let uids = params.data.replace(/#/g, "").split(",");
     for (const uid of uids) {
       if (uid.length !== 32) {
         this.bot.sendMessage(msg.chat.id, listText.uidNotValid(uid));
         return;
       }
-      console.log(params);
       let text = await buildPerformanceInfoMsg(uid, params.detail);
       if (params.S)
         text +=

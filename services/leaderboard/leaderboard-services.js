@@ -20,10 +20,10 @@ const buildPositionsMsg = async (uid) => {
   let info = await findUidInfoOrCreate(uid);
   // build message for getposition
   logger.debug(`[buildPositionsMsg] ${uid} `);
-  let text = `${uid}:`;
+  let text = `\`${uid}\`:`;
   text += `\n---------${positions.length} [positions](${
     binanceProfileLeaderboardLink + uid
-  }) of *${info.nickName}*------`;
+  }) of *${info.nickName.replace(/ |-/g, "_")}*------`;
   text += buildPositionText(positions);
   return text;
 };
@@ -186,7 +186,7 @@ const getStaticOfRecentPosition = async (uid) => {
     static.range = Math.round((static.to - static.from) / 86400000);
     static.from = new Date(static.from).toLocaleDateString();
     static.to = new Date(static.to).toLocaleDateString();
-    static.nickName = positions[0].nickName;
+    //static.nickName = positions[0].nickName;
     static.success = true;
     static.pnlOfWin = static.pnlOfWin.toFixed(2);
     static.pnlOfLoss = static.pnlOfLoss.toFixed(2);
@@ -211,7 +211,7 @@ const buildStaticPositionMsg = async (uid, detail = false) => {
   // build message for getposition
   logger.debug(`[buildPositionsMsg] ${uid} `);
   if (static.success == false) return `🔴 Not found history position of ${uid}`;
-  let text = `#STATIC OF *#${info.nickName}*\n${uid}`;
+  let text = `#STATIC OF *#${info.nickName.replace(/ |-/g, "_")}*\n\`${uid}\``;
   text += buildAnalysisOfUidMsg(static);
   if (detail) text += buildPositionText(positions);
   logger.debug(text);
@@ -243,9 +243,9 @@ const buildAnalysisOfUidMsg = (static) => {
 const buildPerformanceInfoMsg = async (uid) => {
   let data = await getPerformanceInfo(uid);
   let info = await findUidInfoOrCreate(uid);
-  let text = `#INFO of *#${info.nickName}: ${info.followerCount} *[follower](${
-    binanceProfileLeaderboardLink + uid
-  }) \n${uid}`;
+  let text = `#INFO of *#${info.nickName.replace(/ |-/g, "_")}: ${
+    info.followerCount
+  } *[follower](${binanceProfileLeaderboardLink + uid}) \n\`${uid}\``;
 
   text += buildPNLandROI(data);
   logger.debug(text);
@@ -262,8 +262,7 @@ const buildPNLandROI = (data) => {
 };
 
 const toEscapeMSg = (str) => {
-  return str.replace(/_/gi, "-");
-  // .replace(/-/gi, "\\-")
+  return str.replace(/_/gi, `\_`).replace(/-/gi, `\-`);
   // .replace("~", "\\~")
   // .replace(/`/gi, "\\`");
 };
