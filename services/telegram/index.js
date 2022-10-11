@@ -52,12 +52,16 @@ class TeleBot {
         let messageText = msg.text.toUpperCase();
         if (!messageText) return;
         if (messageText.startsWith("/")) {
-          let args = messageText.replace("/", "").split(" ");
+          let args = messageText.replace(/\//g, "").split(" ");
           let commandParameter = args[0].split("?").join(" ").split(" ");
           const params = Object.fromEntries(
-            new URLSearchParams(commandParameter[1])
+            new URLSearchParams(
+              commandParameter[1] ? commandParameter[1].toLowerCase() : ""
+            )
           );
-          params.data = args[1];
+
+          params.data = args[1] ? args[1].replace(/\n/g, "") : "";
+          logger.debug(params);
           switch (commandParameter[0]) {
             case "P":
             case "POS":
@@ -222,6 +226,7 @@ class TeleBot {
     if (!params.data) {
       this.bot.sendMessage(msg.chat.id, listText.helpPosition);
     }
+
     let uids = params.data.replace(/#/g, "").split(",");
     for (const uid of uids) {
       if (uid.length !== 32) {
@@ -230,7 +235,7 @@ class TeleBot {
       }
       let text = await buildStaticPositionMsg(uid, params.detail);
       msg.reply_markup = keyboard.refreshHistoryPosition(uid);
-      await this.sendReplyCommand(text, msg);
+      this.sendReplyCommand(text, msg);
       await delay(500);
     }
 

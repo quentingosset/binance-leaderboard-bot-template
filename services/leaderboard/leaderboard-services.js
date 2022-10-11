@@ -255,14 +255,15 @@ const buildPNLandROI = (data) => {
   let text = ``;
   for (const [key, value] of Object.entries(data.PNL)) {
     //console.log(`${key}: ${value}`);
-    if (value > 0) text += `\n*${key}*: ${value}$ (${data.ROI[key]}%)`;
+    if (value > 0) text += `\n${key}: ${value}$ (${data.ROI[key]}%)`;
     else text += `\n${key}: *${value}$ (${data.ROI[key]}%)*`;
   }
+
   return toEscapeMSg(text);
 };
 
 const toEscapeMSg = (str) => {
-  return str.replace(/_/gi, `\_`).replace(/-/gi, `\-`);
+  return str.replace(/_/gi, `\\_`).replace(/-/gi, `\-`);
   // .replace("~", "\\~")
   // .replace(/`/gi, "\\`");
 };
@@ -284,7 +285,7 @@ const getPerformanceInfo = async (uid) => {
   });
   return res;
 };
-
+const findGoodUId = async () => {};
 const getTopLeaderBoard = async () => {};
 
 module.exports = {
