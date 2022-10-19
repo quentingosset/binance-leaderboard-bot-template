@@ -1,5 +1,17 @@
 const logger = require("../utils/logger");
-const { getUidInfo, createUidInfo } = require("../database/model");
+const delay = require("../utils/time");
+const {
+  getUidInfo,
+  createUidInfo,
+  findPerfomanceOfUidInfo,
+  createPerfomanceOfUidInfo,
+  findStaticOfUid,
+  createStaticOfUid,
+  createGoodUidInfo,
+  findAllPerfomanceInfo,
+  findAllGoodUidInfo,
+} = require("../database/model");
+
 let binanceProfileLeaderboardLink =
   "https://www.binance.com/en/futures-activity/leaderboard?type=myProfile&encryptedUid=";
 const BinanceLeaderboardApi = require("../leaderboard/leaderboard-api");
@@ -285,8 +297,148 @@ const getPerformanceInfo = async (uid) => {
   });
   return res;
 };
-const findGoodUId = async () => {};
-const getTopLeaderBoard = async () => {};
+const getGoodUidFromLeaderBoard = async (
+  params = {
+    period: "EXACT_MONTHLY",
+    type: "ROI",
+  }
+) => {
+  let message = "";
+  let data = await BinanceLeaderboardApi.getLeaderboardRank(
+    params.period ? params.period : undefined,
+    params.type ? params.type : undefined
+  );
+  // let data = [{ encryptedUid: "2154D02AD930F6C6E65C507DD73CB3E7" }];
+  for (let d of data) {
+    let res = await checkGoodUid(d.encryptedUid);
+    if (res) message += res + "\n";
+    await delay(100);
+  }
+  return message;
+};
+const checkGoodUid = async (uid) => {
+  let mesage = ``;
+  let isNotGood = false;
+  let periodType = [
+    "MONTHLY",
+    "EXACT_MONTHLY",
+    "YEARLY",
+    "EXACT_YEARLY",
+    "ALL",
+  ];
+  let per = await findPerfomanceOfUidInfo(uid);
+
+  if (!per) {
+    per = await getPerformanceInfo(uid);
+    await delay(168);
+    per.uid = uid;
+    await createPerfomanceOfUidInfo(per);
+  }
+  for (const [key, value] of Object.entries(per.PNL)) {
+    if (periodType.includes(key) && parseFloat(value) <= 0) {
+      isNotGood = true;
+    }
+  }
+
+  if (isNotGood) return false;
+  if (parseFloat(per.PNL.EXACT_YEARLY) < 32686) return false;
+  if (parseFloat(per.PNL.EXACT_YEARLY) * 0.6 > parseFloat(per.PNL.ALL)) {
+    logger.debug(
+      `[${uid}] good perfromance but EXACT_YEARLY ${
+        per.PNL.EXACT_YEARLY
+      } > ALL: ${per.PNL.ALL} \n${binanceProfileLeaderboardLink + uid}\n`
+    );
+    return false;
+    // }
+  }
+  // check good performance, if EXACT_YEARLY less than  EXACT_MONTHLY return
+  if (
+    parseFloat(per.PNL.EXACT_YEARLY) / 2 <
+    parseFloat(per.PNL.EXACT_MONTHLY)
+  ) {
+    logger.debug(
+      `[${uid}] good perfromance but EXACT_YEARLY/2: ${
+        per.PNL.EXACT_YEARLY / 2
+      } < ${per.PNL.EXACT_MONTHLY} \n${binanceProfileLeaderboardLink + uid}\n`
+    );
+    return false;
+  }
+  logger.debug(`uid ${uid} isNotGood: ${isNotGood}`);
+  mesage = `\`${uid}\`: good performance `;
+  per.isGood = true;
+  //save performance info if they good
+  await createPerfomanceOfUidInfo(per);
+
+  // check static
+  let staticOfUid = await findStaticOfUid(uid);
+  if (!staticOfUid) {
+    staticOfUid = await getStaticOfRecentPosition(uid);
+    if (staticOfUid.static.success == true) {
+      await delay(168);
+      staticOfUid.uid = uid;
+      await createStaticOfUid(staticOfUid);
+    } else {
+      logger.debug(
+        `[${uid}] good perfromance but can get static\n${
+          binanceProfileLeaderboardLink + uid
+        }\n`
+      );
+      return mesage + `can't get static `;
+    }
+  }
+
+  let static = staticOfUid.static;
+  if (new Date(static.to).getTime() < Date.now() - 30 * 86400000) {
+    logger.debug(
+      `[${uid}] didn't have trade from 30 days\n${
+        binanceProfileLeaderboardLink + uid
+      }\n`
+    );
+    return mesage + `can't get static from 30 days`;
+  }
+  if (parseFloat(static.winRate) < 60) {
+    if (static.winRate > 45)
+      logger.debug(
+        `[${uid}] winRate: ${static.winRate}% < 60% \n${
+          binanceProfileLeaderboardLink + uid
+        }\n`
+      );
+    return false;
+  }
+
+  if (parseFloat(static.maxStoploss) < -80) {
+    logger.debug(
+      `[${uid}] maxStoploss: ${static.maxStoploss}% > 80% \n${
+        binanceProfileLeaderboardLink + uid
+      }\n`
+    );
+    return false;
+  }
+  if (parseFloat(static.avgTpWin) < parseFloat(static.avgStopLoss)) {
+    logger.debug(
+      `[${uid}] avgTpWin: ${static.avgTpWin}% < ${static.avgStopLoss}% \n${
+        binanceProfileLeaderboardLink + uid
+      }\n`
+    );
+    return false;
+  }
+  if (parseFloat(static.totalRoe) < 0) {
+    logger.debug(
+      `[${uid}] totalRoe: ${static.totalRoe}% <0 \n${
+        binanceProfileLeaderboardLink + uid
+      }\n`
+    );
+  }
+
+  let goodUidInfo = {
+    uid: uid,
+    static: static,
+    positions: staticOfUid.positions,
+    performance: per,
+  };
+  await createGoodUidInfo(goodUidInfo);
+  return `\`${uid}\`:  good performance and static `;
+};
 
 module.exports = {
   buildPositionsMsg,
@@ -295,4 +447,5 @@ module.exports = {
   getPerformanceInfo,
   getStaticOfRecentPosition,
   getCurrentPositionInfo,
+  getGoodUidFromLeaderBoard,
 };

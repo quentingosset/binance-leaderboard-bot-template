@@ -6,6 +6,7 @@ const {
   buildPositionsMsg,
   buildStaticPositionMsg,
   buildPerformanceInfoMsg,
+  getGoodUidFromLeaderBoard,
 } = require("../leaderboard/leaderboard-services");
 const logger = require("../utils/logger");
 const delay = require("../utils/time");
@@ -59,7 +60,9 @@ class TeleBot {
               commandParameter[1] ? commandParameter[1].toLowerCase() : ""
             )
           );
-
+          for (const [key, value] of Object.entries(params)) {
+            params[key] = value.toUpperCase();
+          }
           params.data = args[1] ? args[1].replace(/\n/g, "") : "";
           logger.debug(params);
           switch (commandParameter[0]) {
@@ -142,6 +145,7 @@ class TeleBot {
     return;
   }
   sendReplyCommand(message, msg) {
+    logger.debug(message);
     let options = getDefaultOptions();
     if (msg.message_id) options.reply_to_message_id = msg.message_id;
 
@@ -204,7 +208,6 @@ class TeleBot {
       }
       let text = await buildPositionsMsg(uid);
       msg.reply_markup = keyboard.refreshPosition(uid);
-      logger.debug(msg.reply_markup);
       this.sendReplyCommand(text, msg);
       // await this.isUserDone(res, msg);
     }
@@ -290,6 +293,75 @@ class TeleBot {
 
     // await this.isUserDone(res, msg);
   };
+  handleGetTopLeader = async (msg, params) => {
+    let period = [
+      "MONTHLY",
+      "EXACT_MONTHLY",
+      "YEARLY",
+      "EXACT_YEARLY",
+      "ALL",
+      "EXACT_WEEKLY",
+      "WEEKLY",
+    ];
+    let type = ["ROI", "PNL"];
+    if (!!params.periods) {
+      let ps = params.periods.split(",");
+      for (let p of ps) {
+        if (!period.includes(p)) {
+          this.sendReplyCommand(
+            `period=${p} is wrong command.. Period correct is *${period}*`,
+            msg
+          );
+          return;
+        }
+      }
+      params.periods = ps;
+    } else if (!!params.period) {
+      if (!period.includes(params.period)) {
+        this.sendReplyCommand(
+          `period=${params.period} is wrong command.. Period correct is *${period}*`,
+          msg
+        );
+        return;
+      }
+      params.periods = [params.period];
+    } else params.periods = [];
+    if (!!params.types) {
+      let ts = params.types.split(",");
+      for (let t of ts) {
+        if (!period.includes(t)) {
+          this.sendReplyCommand(
+            `type=${t} is wrong command. Period correct is *${period}*`,
+            msg
+          );
+          return;
+        }
+      }
+      params.types = ts;
+    } else if (!!params.type) {
+      if (!type.includes(params.type)) {
+        this.sendReplyCommand(
+          `type=${params.type} is wrong command. Type correct is *${type}*`,
+          msg
+        );
+        return;
+      }
+      params.types = [params.type];
+    } else params.types = ["ROI", "PNL"];
+    console.log(params);
+    for (let period of params.periods) {
+      for (let type of params.types) {
+        let text = await getGoodUidFromLeaderBoard({ period, type });
+        this.sendReplyCommand(
+          `List good uid of ${period}-${type}\n${text}`,
+          msg
+        );
+      }
+    }
+
+    // await this.isUserDone(res, msg);
+  };
+
   handleGetInfoCallback = async (callbackData, uid) => {
     let text = await buildPerformanceInfoMsg(uid);
     let options = getDefaultOptions();

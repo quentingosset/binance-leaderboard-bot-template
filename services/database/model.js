@@ -2,6 +2,9 @@ const MongoDb = require("./mongodb");
 const logger = require("../utils/logger");
 const UserModel = MongoDb.getUserModel();
 const UidInfoModel = MongoDb.UidInfoModel;
+const StaticModel = MongoDb.StaticModel;
+const PerformanceModel = MongoDb.PerformanceModel;
+const GoodUidInfoModel = MongoDb.GoodUidInfoModel;
 
 module.exports = {
   getUserInfo,
@@ -11,6 +14,14 @@ module.exports = {
   getAllUserInfo,
   getUidInfo,
   createUidInfo,
+  findPerfomanceOfUidInfo,
+  createPerfomanceOfUidInfo,
+  findStaticOfUid,
+  createStaticOfUid,
+  findGoodUidInfo,
+  createGoodUidInfo,
+  findAllPerfomanceInfo,
+  findAllGoodUidInfo,
 };
 async function getAllUserInfo() {
   return UserModel.find({ role: "user" });
@@ -57,4 +68,46 @@ async function getUidInfo(uid) {
 async function createUidInfo(params) {
   let uidInfo = new UidInfoModel(params);
   return uidInfo.save();
+}
+
+async function findPerfomanceOfUidInfo(uid) {
+  let d = new Date();
+  let todayString =
+    d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+  let today = new Date(todayString);
+  return PerformanceModel.findOne({ uid: uid, updatedAt: { $gte: today } });
+}
+async function findAllPerfomanceInfo() {
+  return PerformanceModel.find({});
+}
+
+async function createPerfomanceOfUidInfo(params) {
+  await PerformanceModel.findOneAndUpdate({ uid: params.uid }, params, {
+    upsert: true,
+  });
+}
+
+async function findStaticOfUid(uid) {
+  let d = new Date();
+  let todayString =
+    d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+  let today = new Date(todayString);
+  return StaticModel.findOne({ uid: uid, updatedAt: { $gte: today } });
+}
+async function createStaticOfUid(params) {
+  await StaticModel.findOneAndUpdate({ uid: params.uid }, params, {
+    upsert: true,
+  });
+}
+
+async function findAllGoodUidInfo() {
+  return GoodUidInfoModel.find({});
+}
+async function findGoodUidInfo(uid) {
+  return GoodUidInfoModel.findOne({ uid: uid });
+}
+async function createGoodUidInfo(params) {
+  await GoodUidInfoModel.findOneAndUpdate({ uid: params.uid }, params, {
+    upsert: true,
+  });
 }

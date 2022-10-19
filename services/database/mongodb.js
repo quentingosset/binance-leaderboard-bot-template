@@ -7,6 +7,9 @@ const mongoose = require("mongoose");
 const logger = require("../utils/logger");
 const UserSchema = require("./schemas/account.schema");
 const UidInfoSchema = require("./schemas/uid-info.schema");
+const PerformanceSchema = require("./schemas/performance.schema");
+const StaticSchema = require("./schemas/static.schema");
+const GoodUidInfoSchema = require("./schemas/good-uid-info.schema");
 class MongoDb {
   constructor() {}
   async init() {
@@ -32,6 +35,9 @@ class MongoDb {
         .catch((error) => console.log(error.message));
       this.UserModel = mongoose.model("User", UserSchema);
       this.UidInfoModel = mongoose.model("uid_info", UidInfoSchema);
+      this.PerformanceModel = mongoose.model("perfomance", PerformanceSchema);
+      this.StaticModel = mongoose.model("static", StaticSchema);
+      this.GoodUidInfoModel = mongoose.model("good_uid", GoodUidInfoSchema);
     } catch (error) {
       throw error;
     }
