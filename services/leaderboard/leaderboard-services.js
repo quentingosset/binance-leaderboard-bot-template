@@ -25,7 +25,7 @@ const buildPositionsMsg = async (uid) => {
     binanceProfileLeaderboardLink + uid
   }) of *${info.nickName.replace(/ |-/g, "_")}*------`;
   text += buildPositionText(positions);
-  return text;
+  return toEscapeMSg(text);
 };
 const buildPositionText = (positions) => {
   let text = "";
@@ -215,7 +215,7 @@ const buildStaticPositionMsg = async (uid, detail = false) => {
   text += buildAnalysisOfUidMsg(static);
   if (detail) text += buildPositionText(positions);
   logger.debug(text);
-  return text;
+  return toEscapeMSg(text);
 };
 const buildAnalysisOfUidMsg = (static) => {
   let text = ``;

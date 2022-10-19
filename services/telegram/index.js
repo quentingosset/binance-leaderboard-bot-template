@@ -151,7 +151,9 @@ class TeleBot {
         msg.reply_markup
       );
     }
-    this.bot.sendMessage(msg.chat.id, message, options);
+    this.bot
+      .sendMessage(msg.chat.id, message, options)
+      .catch((error) => console.log(error));
     return;
   }
   handleCallBackQuerry = async (callbackQuery) => {
