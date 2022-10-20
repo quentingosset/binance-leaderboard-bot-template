@@ -7,6 +7,7 @@ const {
   buildStaticPositionMsg,
   buildPerformanceInfoMsg,
   getGoodUidFromLeaderBoard,
+  getGoodUidFromUids,
 } = require("../leaderboard/leaderboard-services");
 const logger = require("../utils/logger");
 const delay = require("../utils/time");
@@ -80,8 +81,12 @@ class TeleBot {
               this.handleGetInfo(msg, params);
               break;
             case "T":
-            case "TOP":
+            case "Top":
               this.handleGetTopLeader(msg, params);
+              break;
+            case "G":
+            case "Good":
+              this.handleGetGoodLeader(msg, params);
               break;
           }
           return;
@@ -156,9 +161,14 @@ class TeleBot {
       );
     }
     this.bot
-      .sendMessage(msg.chat.id, message, options)
+      .sendMessage(msg.chat.id, this.toEscapeMSg(message), options)
       .catch((error) => console.log(error));
     return;
+  }
+  toEscapeMSg(str) {
+    return str.replace(/_/gi, `\\_`).replace(/-/gi, `\-`);
+    // .replace("~", "\\~")
+    // .replace(/`/gi, "\\`");
   }
   handleCallBackQuerry = async (callbackQuery) => {
     try {
@@ -293,6 +303,16 @@ class TeleBot {
 
     // await this.isUserDone(res, msg);
   };
+
+  handleGetGoodLeader = async (msg, params) => {
+    if (!params.data) {
+      this.bot.sendMessage(msg.chat.id, listText.helpPosition);
+    }
+    params.uids = params.data.replace(/#/g, "").split(",");
+    let text = await getGoodUidFromUids(params);
+    this.sendReplyCommand(`List good uid check\n${text}`, msg);
+  };
+
   handleGetTopLeader = async (msg, params) => {
     let period = [
       "MONTHLY",
