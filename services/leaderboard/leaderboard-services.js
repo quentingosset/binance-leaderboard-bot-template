@@ -331,7 +331,7 @@ const buildAnaylisGoodUidMsg = async (uids, detail = false) => {
     else if (res.isGoodPerformance && !res.isHaveStatic) {
       results.goodPerformance.push(res.uid);
       message += res.message;
-    } else if (!res.goodStatic && res.isHaveStatic)
+    } else if (!res.isGoodStatic && res.isHaveStatic)
       results.notGoodStatic.push(res.uid);
     await delay(100);
   }
@@ -433,7 +433,6 @@ const checkGoodUid = async (uid) => {
       res.message = `\`${uid}\` winRate: ${static.winRate}% < 60% \n${
         binanceProfileLeaderboardLink + uid
       }`;
-    res.isGoodStatic = false;
     logger.debug(res.message);
 
     return res;
@@ -443,7 +442,6 @@ const checkGoodUid = async (uid) => {
     res.message = `[${uid}] maxStoploss: ${static.maxStoploss}% > 80% \n${
       binanceProfileLeaderboardLink + uid
     }\n`;
-    res.isGoodStatic = false;
     logger.debug(res.message);
 
     return res;
@@ -452,7 +450,6 @@ const checkGoodUid = async (uid) => {
     res.message = `[${uid}] avgTpWin: ${static.avgTpWin}% < ${
       static.avgStopLoss
     }% \n${binanceProfileLeaderboardLink + uid}\n`;
-    res.isGoodStatic = false;
     logger.debug(res.message);
     return res;
   }
