@@ -280,6 +280,7 @@ const getPerformanceInfo = async (uid) => {
     ROI: {},
     PNL: {},
   };
+  if (!data) return false;
   data.map((d) => {
     if (d.statisticsType == "ROI") {
       res.ROI[d.periodType] = (d.value * 100).toFixed(2);
@@ -363,6 +364,10 @@ const checkGoodUid = async (uid) => {
   if (!per) {
     per = await getPerformanceInfo(uid);
     await delay(168);
+    if (!per) {
+      res.isGoodPerformance = false;
+      return res;
+    }
     per.uid = uid;
     await createPerfomanceOfUidInfo(per);
   }
