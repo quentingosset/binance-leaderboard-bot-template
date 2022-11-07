@@ -51,9 +51,12 @@ class TeleBot {
     this.bot.on("message", async (msg) => {
       try {
         if (!msg.text) return;
+
         let messageText = msg.text.toUpperCase();
         if (!messageText) return;
         if (messageText.startsWith("/")) {
+          let check = await this.isUsedCanUseMyBot(msg);
+          if (!check) return this.sendReplyCommand(listText.wantToUsed, msg);
           let args = messageText.replace(/\//g, "").split(" ");
           let commandParameter = args[0].split("?").join(" ").split(" ");
           const params = Object.fromEntries(
@@ -122,21 +125,36 @@ class TeleBot {
     await this.bot.sendMessage(msg.chat.id, listText.welcome);
     // await this.isUserDone(res, msg);
   };
+  isUsedCanUseMyBot = async (msg) => {
+    try {
+      if (msg.from.is_bot) {
+        return false;
+      }
 
+      // find account exist on Database
+      let account = await getUserInfo(msg.from.id);
+      logger.debug(JSON.stringify(account));
+      if (!account)
+        account = await createMember({
+          ...msg.from,
+        });
+      if (account.isCanUsed) return true;
+      return false;
+    } catch (error) {
+      logger.error(`[checkUserInfo] ${error.message}`);
+    }
+  };
   checkUserInfo = async (msg) => {
     try {
       if (msg.from.is_bot) {
         return false;
       }
-      let ref = msg.text.replace("/start", "").trim();
-      if (isNaN(ref)) ref = null;
+
       // find account exist on Database
       let account = await getUserInfo(msg.from.id);
       if (!account)
         account = await createMember({
           ...msg.from,
-          ref: ref,
-          captcha: "",
         });
 
       return account;

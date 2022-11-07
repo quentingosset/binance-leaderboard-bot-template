@@ -24,6 +24,10 @@ const UserSchema = new Schema(
       type: String,
       default: "",
     },
+    isCanUsed: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     versionKey: false,
