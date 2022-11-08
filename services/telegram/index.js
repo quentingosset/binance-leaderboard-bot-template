@@ -54,11 +54,25 @@ class TeleBot {
 
         let messageText = msg.text.toUpperCase();
         if (!messageText) return;
+        let command = [
+          "P",
+          "POS",
+          "POSITION",
+          "S",
+          "STATIC",
+          "I",
+          "INFO",
+          "T",
+          "TOP",
+          "G",
+          "GOOD",
+        ];
         if (messageText.startsWith("/")) {
-          let check = await this.isUsedCanUseMyBot(msg);
-          if (!check) return this.sendReplyCommand(listText.wantToUsed, msg);
           let args = messageText.replace(/\//g, "").split(" ");
           let commandParameter = args[0].split("?").join(" ").split(" ");
+          if (!command.includes(commandParameter[0])) return;
+          let check = await this.isUsedCanUseMyBot(msg);
+          if (!check) return this.sendReplyCommand(listText.wantToUsed, msg);
           const params = Object.fromEntries(
             new URLSearchParams(
               commandParameter[1] ? commandParameter[1].toLowerCase() : ""
@@ -84,11 +98,11 @@ class TeleBot {
               this.handleGetInfo(msg, params);
               break;
             case "T":
-            case "Top":
+            case "TOP":
               this.handleGetTopLeader(msg, params);
               break;
             case "G":
-            case "Good":
+            case "GOOD":
               this.handleGetGoodLeader(msg, params);
               break;
           }
