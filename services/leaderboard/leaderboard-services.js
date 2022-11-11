@@ -13,7 +13,7 @@ const {
 } = require("../database/model");
 
 let binanceProfileLeaderboardLink =
-  "https://www.binance.com/en/futures-activity/leaderboard?type=myProfile&encryptedUid=";
+  "https://www.binance.com/en/futures-activity/leaderboard/user?encryptedUid=";
 const BinanceLeaderboardApi = require("../leaderboard/leaderboard-api");
 const LONG = "LONG";
 const SHORT = "SHORT";
@@ -433,9 +433,9 @@ const checkGoodUid = async (uid) => {
     res.isHaveStatic = false;
     return res;
   }
-  if (parseFloat(static.winRate) < 60) {
+  if (parseFloat(static.winRate) < 68) {
     if (static.winRate > 45)
-      res.message = `\`${uid}\` winRate: ${static.winRate}% < 60% \n${
+      res.message = `\`${uid}\` winRate: ${static.winRate}% < 68% \n${
         binanceProfileLeaderboardLink + uid
       }`;
     logger.debug(res.message);
@@ -467,7 +467,9 @@ const checkGoodUid = async (uid) => {
   };
   res.isGoodStatic = true;
   await createGoodUidInfo(goodUidInfo);
-  res.message = `\`${uid}\` good perfromance *and static*\n`;
+  res.message = `\`${uid}\` good perfromance and [static](${
+    binanceProfileLeaderboardLink + uid
+  })\n`;
   return res;
 };
 
