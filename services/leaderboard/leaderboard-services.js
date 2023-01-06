@@ -315,7 +315,6 @@ const findUidHavePosition = async (params, bot, msg) => {
   let uids = allPerInfos.map((perInfo) => perInfo.uid);
   let sign = params.side == "LONG" ? 1 : -1;
   let message = "";
-
   for (let uid of uids) {
     let res = await BinanceLeaderboardApi.getOtherPosition(uid);
     if (!res.otherPositionRetList) return;
@@ -329,24 +328,23 @@ const findUidHavePosition = async (params, bot, msg) => {
             pos.symbol == params.symbol + "USDT") &&
           params.side == side
         ) {
-          console.log("found");
           if (
             !!params.price &&
             pos.entryPrice > params.price * 1.03 &&
             pos.entryPrice < params.price * 0.97
           )
             return;
-
-          message += `Found ${side} ${pos.symbol}\nPrice: ${
+          let text = `${side} ${pos.symbol}\nPrice: ${
             pos.entryPrice
           }VOL: ${Math.abs(pos.entryPrice * pos.amount).toFixed(2)}\nROE: ${(
             pos.roe * 100
           ).toFixed(2)}% PNL: ${pos.pnl.toFixed(2)}$ \n\`${uid}\`\n`;
-          bot.sendReplyCommand(message, msg);
+          message += text;
+          bot.sendReplyCommand(text, msg);
         }
       });
     }
-    await delay(3000);
+    await delay(3686);
   }
   return message;
 };
