@@ -310,6 +310,46 @@ const getGoodUidFromLeaderBoard = async (
   // ];
   return buildAnaylisGoodUidMsg(uids, params.detail);
 };
+const findUidHavePosition = async (params, bot, msg) => {
+  let allPerInfos = await findAllPerfomanceInfo();
+  let uids = allPerInfos.map((perInfo) => perInfo.uid);
+  let sign = params.side == "LONG" ? 1 : -1;
+  let message = "";
+
+  for (let uid of uids) {
+    let res = await BinanceLeaderboardApi.getOtherPosition(uid);
+    if (!res.otherPositionRetList) return;
+    let positions = res.otherPositionRetList;
+    logger.debug(`[getPositionInfo] ${JSON.stringify(positions)}`);
+    if (positions.length !== 0) {
+      data = positions.map((pos) => {
+        let side = pos.amount > 0 ? LONG : SHORT;
+        if (
+          (pos.symbol == params.symbol + "BUSD" ||
+            pos.symbol == params.symbol + "USDT") &&
+          params.side == side
+        ) {
+          console.log("found");
+          if (
+            !!params.price &&
+            pos.entryPrice > params.price * 1.03 &&
+            pos.entryPrice < params.price * 0.97
+          )
+            return;
+
+          message += `Found ${side} ${pos.symbol}\nPrice: ${
+            pos.entryPrice
+          }VOL: ${Math.abs(pos.entryPrice * pos.amount).toFixed(2)}\nROE: ${(
+            pos.roe * 100
+          ).toFixed(2)}% PNL: ${pos.pnl.toFixed(2)}$ \n\`${uid}\`\n`;
+          bot.sendReplyCommand(message, msg);
+        }
+      });
+    }
+    await delay(3000);
+  }
+  return message;
+};
 const getGoodUidFromUids = async (params) => {
   return buildAnaylisGoodUidMsg(params.uids, params.detail);
 };
@@ -378,13 +418,12 @@ const checkGoodUid = async (uid) => {
   }
 
   if (!res.isGoodPerformance) return res;
-  if (parseFloat(per.PNL.EXACT_YEARLY) < 32686) return false;
+  if (parseFloat(per.PNL.EXACT_YEARLY) < 68686) return false;
   if (parseFloat(per.PNL.EXACT_YEARLY) * 0.6 > parseFloat(per.PNL.ALL)) {
     res.message = `\`${uid}\` good perfromance but EXACT_YEARLY ${
       per.PNL.EXACT_YEARLY
     } > ALL: ${per.PNL.ALL} \n${binanceProfileLeaderboardLink + uid}\n`;
     logger.debug(res.message);
-    res.isGoodPerformance = false;
 
     return res;
     // }
@@ -483,4 +522,5 @@ module.exports = {
   getGoodUidFromLeaderBoard,
   checkGoodUid,
   getGoodUidFromUids,
+  findUidHavePosition,
 };

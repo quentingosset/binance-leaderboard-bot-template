@@ -8,6 +8,7 @@ const {
   buildPerformanceInfoMsg,
   getGoodUidFromLeaderBoard,
   getGoodUidFromUids,
+  findUidHavePosition,
 } = require("../leaderboard/leaderboard-services");
 const logger = require("../utils/logger");
 const delay = require("../utils/time");
@@ -66,6 +67,8 @@ class TeleBot {
           "TOP",
           "G",
           "GOOD",
+          "FIND",
+          "F",
         ];
         if (messageText.startsWith("/")) {
           let args = messageText.replace(/\//g, "").split(" ");
@@ -104,6 +107,10 @@ class TeleBot {
             case "G":
             case "GOOD":
               this.handleGetGoodLeader(msg, params);
+              break;
+            case "F":
+            case "FIND":
+              this.handleFindLeader(msg, params);
               break;
           }
           return;
@@ -412,6 +419,16 @@ class TeleBot {
     }
 
     // await this.isUserDone(res, msg);
+  };
+  handleFindLeader = async (msg, params) => {
+    if (!params.data) {
+      this.bot.sendMessage(msg.chat.id, listText.helpPosition);
+    }
+    params.symbols = params.data.toUpperCase().replace(/#/g, "").split(",");
+    params.side = params.side.toUpperCase();
+    params.symbol = params.symbol.toUpperCase();
+    let text = await findUidHavePosition(params, this, msg);
+    this.sendReplyCommand(`Found \n${text}`, msg);
   };
 
   handleGetInfoCallback = async (callbackData, uid) => {
