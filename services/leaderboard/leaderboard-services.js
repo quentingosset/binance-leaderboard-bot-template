@@ -315,9 +315,10 @@ const findUidHavePosition = async (params, bot, msg) => {
   let uids = allPerInfos.map((perInfo) => perInfo.uid);
   let sign = params.side == "LONG" ? 1 : -1;
   let message = "";
+  let count = 0;
   for (let uid of uids) {
     let res = await BinanceLeaderboardApi.getOtherPosition(uid);
-    if (!res.otherPositionRetList) return;
+    if (!res.otherPositionRetList) continue;
     let positions = res.otherPositionRetList;
     logger.debug(`[getPositionInfo] ${JSON.stringify(positions)}`);
     if (positions.length !== 0) {
@@ -330,8 +331,8 @@ const findUidHavePosition = async (params, bot, msg) => {
         ) {
           if (
             !!params.price &&
-            pos.entryPrice > params.price * 1.03 &&
-            pos.entryPrice < params.price * 0.97
+            pos.entryPrice > params.price * 1.025 &&
+            pos.entryPrice < params.price * 0.975
           )
             return;
           let text = `${side} ${pos.symbol}\nPrice: ${
@@ -345,8 +346,9 @@ const findUidHavePosition = async (params, bot, msg) => {
       });
     }
     await delay(3686);
+    count++;
   }
-  return message;
+  return message + count;
 };
 const getGoodUidFromUids = async (params) => {
   return buildAnaylisGoodUidMsg(params.uids, params.detail);
