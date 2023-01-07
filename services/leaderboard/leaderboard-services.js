@@ -331,8 +331,8 @@ const findUidHavePosition = async (params, bot, msg) => {
         ) {
           if (
             !!params.price &&
-            pos.entryPrice > params.price * 1.025 &&
-            pos.entryPrice < params.price * 0.975
+            (pos.entryPrice > params.price * 1.025 ||
+              pos.entryPrice < params.price * 0.975)
           )
             return;
           let text = `${side} ${pos.symbol}\nPrice: ${
