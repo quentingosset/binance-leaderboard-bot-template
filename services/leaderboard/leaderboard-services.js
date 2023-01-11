@@ -351,9 +351,9 @@ const findUidHavePosition = async (params, bot, msg) => {
   return message + count;
 };
 const getGoodUidFromUids = async (params) => {
-  return buildAnaylisGoodUidMsg(params.uids, params.detail);
+  return buildAnaylisGoodUidMsg(params.uids, params);
 };
-const buildAnaylisGoodUidMsg = async (uids, detail = false) => {
+const buildAnaylisGoodUidMsg = async (uids, params) => {
   let results = {
     goodPerformance: [],
     goodStatic: [],
@@ -362,7 +362,7 @@ const buildAnaylisGoodUidMsg = async (uids, detail = false) => {
   };
   let message = ``;
   for (let uid of uids) {
-    let res = await checkGoodUid(uid);
+    let res = await checkGoodUid(uid, params);
     if (res.isGoodPerformance && res.isGoodStatic) {
       results.goodStatic.push(res.uid);
       message += res.message;
@@ -378,12 +378,12 @@ const buildAnaylisGoodUidMsg = async (uids, detail = false) => {
   }
   message += `*Results*\n*Good Static*: ${results.goodStatic}
 *Good Performance (can't get static)*: ${results.goodPerformance}`;
-  if (detail)
+  if (params.detail)
     message += `\nNot good static: : ${results.notGoodStatic}
 Not good Performance: ${results.notGoodPerformance}`;
   return message;
 };
-const checkGoodUid = async (uid) => {
+const checkGoodUid = async (uid, params) => {
   let res = {
     message: ``,
     uid: uid,
@@ -399,6 +399,7 @@ const checkGoodUid = async (uid) => {
     "EXACT_YEARLY",
     "ALL",
   ];
+  if (params.periodType) periodType = params.periodType;
   let per = await findPerfomanceOfUidInfo(uid);
 
   if (!per) {
@@ -418,7 +419,9 @@ const checkGoodUid = async (uid) => {
   }
 
   if (!res.isGoodPerformance) return res;
-  if (parseFloat(per.PNL.EXACT_YEARLY) < 68686) return false;
+  let minProfit = params.profit || 68686;
+
+  if (parseFloat(per.PNL.EXACT_YEARLY) < minProfit) return false;
   if (parseFloat(per.PNL.EXACT_YEARLY) * 0.6 > parseFloat(per.PNL.ALL)) {
     res.message = `\`${uid}\` good perfromance but EXACT_YEARLY ${
       per.PNL.EXACT_YEARLY
@@ -428,19 +431,19 @@ const checkGoodUid = async (uid) => {
     return res;
     // }
   }
-  // check good performance, if EXACT_YEARLY less than  EXACT_MONTHLY return
-  if (
-    parseFloat(per.PNL.EXACT_YEARLY) / 2 <
-    parseFloat(per.PNL.EXACT_MONTHLY)
-  ) {
-    res.message = `\`${uid}\` good perfromance but EXACT_YEARLY/2: ${
-      per.PNL.EXACT_YEARLY / 2
-    } < ${per.PNL.EXACT_MONTHLY} \n${binanceProfileLeaderboardLink + uid}\n`;
-    logger.debug(res.message);
-    res.isGoodPerformance = false;
+  // // check good performance, if EXACT_YEARLY less than  EXACT_MONTHLY return
+  // if (
+  //   parseFloat(per.PNL.EXACT_YEARLY) / 2 <
+  //   parseFloat(per.PNL.EXACT_MONTHLY)
+  // ) {
+  //   res.message = `\`${uid}\` good perfromance but EXACT_YEARLY/2: ${
+  //     per.PNL.EXACT_YEARLY / 2
+  //   } < ${per.PNL.EXACT_MONTHLY} \n${binanceProfileLeaderboardLink + uid}\n`;
+  //   logger.debug(res.message);
+  //   res.isGoodPerformance = false;
 
-    return res;
-  }
+  //   return res;
+  // }
   logger.debug(`uid ${uid} isGoodPerformance: ${res.isGoodPerformance}`);
   //save performance info if they good
   await createPerfomanceOfUidInfo(per);
@@ -472,7 +475,8 @@ const checkGoodUid = async (uid) => {
     res.isHaveStatic = false;
     return res;
   }
-  if (parseFloat(static.winRate) < 68) {
+  let minRate = params.rate || 68;
+  if (parseFloat(static.winRate) < minRate) {
     if (static.winRate > 45)
       res.message = `\`${uid}\` winRate: ${static.winRate}% < 68% \n${
         binanceProfileLeaderboardLink + uid
