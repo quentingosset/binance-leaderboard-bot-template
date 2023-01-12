@@ -308,7 +308,7 @@ const getGoodUidFromLeaderBoard = async (
   //   { encryptedUid: "3D6B9E9F91184C299AE5E82D5AD56E68" },
   //   { encryptedUid: "0AA8893770EC615D0C2EF5ECB49D1DC4" },
   // ];
-  return buildAnaylisGoodUidMsg(uids, params.detail);
+  return buildAnaylisGoodUidMsg(uids, params);
 };
 const findUidHavePosition = async (params, bot, msg) => {
   let allPerInfos = await findAllPerfomanceInfo();
