@@ -399,7 +399,8 @@ const checkGoodUid = async (uid, params) => {
     "EXACT_YEARLY",
     "ALL",
   ];
-  if (params.periodType) periodType = params.periodType;
+  if (params.all)
+    periodType = ["MONTHLY", "EXACT_MONTHLY", "YEARLY", "EXACT_YEARLY"];
   let per = await findPerfomanceOfUidInfo(uid);
 
   if (!per) {
@@ -422,15 +423,15 @@ const checkGoodUid = async (uid, params) => {
   let minProfit = params.profit || 68686;
 
   if (parseFloat(per.PNL.EXACT_YEARLY) < minProfit) return false;
-  if (parseFloat(per.PNL.EXACT_YEARLY) * 0.6 > parseFloat(per.PNL.ALL)) {
-    res.message = `\`${uid}\` good perfromance but EXACT_YEARLY ${
-      per.PNL.EXACT_YEARLY
-    } > ALL: ${per.PNL.ALL} \n${binanceProfileLeaderboardLink + uid}\n`;
-    logger.debug(res.message);
+  // if (parseFloat(per.PNL.EXACT_YEARLY) * 0.6 > parseFloat(per.PNL.ALL)) {
+  //   res.message = `\`${uid}\` good perfromance but EXACT_YEARLY ${
+  //     per.PNL.EXACT_YEARLY
+  //   } > ALL: ${per.PNL.ALL} \n${binanceProfileLeaderboardLink + uid}\n`;
+  //   logger.debug(res.message);
 
-    return res;
-    // }
-  }
+  //   return res;
+  //   // }
+  // }
   // // check good performance, if EXACT_YEARLY less than  EXACT_MONTHLY return
   // if (
   //   parseFloat(per.PNL.EXACT_YEARLY) / 2 <
