@@ -361,6 +361,7 @@ class TeleBot {
       "ALL",
       "EXACT_WEEKLY",
       "WEEKLY",
+      "DAILY",
     ];
     let type = ["ROI", "PNL"];
     if (!!params.periods) {
